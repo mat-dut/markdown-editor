@@ -6,6 +6,7 @@ This is a **text** in the* same paragraph.
 ~~This should be **striked** through~~
 
 This :duck: is on :fire:
+:grinning_face:
 
 - This `is` item one
 - This is item two

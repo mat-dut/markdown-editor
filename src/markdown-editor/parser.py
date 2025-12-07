@@ -62,6 +62,9 @@ def parse_blocks(tokens: list[Token]) -> list[Block]:
             current_block.content.append(token)
             continue
 
+        elif token.token_type == TokenType.BLOCKQUOTE:
+            current_block = handle_blockquote(current_block, token, blocks)
+
         elif token.token_type == TokenType.HEADING:
             current_block = handle_heading(current_block, token)
 
