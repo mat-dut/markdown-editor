@@ -1,17 +1,16 @@
 from models.types import TokenType, BlockType
 from models.models import Token, Block
 import re
+import emoji
 
 def render_inline(text: str) -> str:
-    """
-    Parse inline markdown with proper nesting support.
-    Processes in order: code (literal) → links → bold → italic
-    """
     result = []
     i = 0
 
+    text = emoji.emojize(text)
+
     while i < len(text):
-        # Code blocks (highest priority - literal content)
+        # Code blocks
         if text[i] == '`':
             end = text.find('`', i + 1)
             if end != -1:
@@ -55,6 +54,15 @@ def render_inline(text: str) -> str:
                 result.append('<strong>')
                 result.append(render_inline(text[i+2:end]))
                 result.append('</strong>')
+                i = end + 2
+                continue
+
+        if i + 1 < len(text) and text[i:i+2] == '~~':
+            end = text.find('~~', i + 2)
+            if end != -1:
+                result.append('<del>')
+                result.append(render_inline(text[i + 2:end]))
+                result.append('</del>')
                 i = end + 2
                 continue
 
@@ -160,9 +168,48 @@ def render_list(block: Block) -> str:
 def render_horizontal_rule(block: Block) -> str:
     return '<hr>'
 
+
+def render_blockquote(block: Block) -> str:
+    from lexer import tokenize
+    from parser import parse_blocks
+
+    lines = []
+    for token in block.content:
+        stripped = re.sub(r'^\s*>\s?', '', token.text)
+        lines.append(stripped)
+
+    inner_text = '\n'.join(lines)
+    inner_tokens = tokenize(inner_text)
+    inner_blocks = parse_blocks(inner_tokens)
+    inner_html = render_html(inner_blocks)
+
+    return f'<blockquote>{inner_html}</blockquote>'
+
+def render_code(block: Block) -> str:
+    if not block.content:
+        return ""
+
+    first_line = block.content[0].text.strip()
+    language = first_line[3:].strip() if len(first_line) > 3 else ""
+
+    code_lines = []
+    for token in block.content[1:-1]:
+        code_lines.append(token.text)
+
+    code = '\n'.join(code_lines)
+
+    code = code.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+    if language:
+        return f'<pre><code class="language-{language}">{code}</code></pre>'
+    else:
+        return f'<pre><code>{code}</code></pre>'
+
 RENDERERS = {
     BlockType.HEADING: render_heading,
     BlockType.PARAGRAPH: render_paragraph,
+    BlockType.BLOCKQUOTE: render_blockquote,
+    BlockType.CODE: render_code,
     BlockType.UNORDERED_LIST: render_list,
     BlockType.ORDERED_LIST: render_list,
     BlockType.HORIZONTAL_RULE: render_horizontal_rule,
