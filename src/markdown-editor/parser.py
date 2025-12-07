@@ -8,6 +8,12 @@ def handle_heading(current_block: Block, token: Token) -> Block:
     return current_block
 
 def handle_text(current_block: Block, token: Token) -> Block:
+    if (current_block.content == [] or current_block.block_type == BlockType.TABLE) and token.text.lstrip().startswith('|') and token.text.rstrip().endswith('|'):
+        current_block.content.append(token)
+        current_block.block_type = BlockType.TABLE
+
+        return current_block
+
     if current_block.block_type in [BlockType.ORDERED_LIST, BlockType.UNORDERED_LIST]:
         current_block.content[-1].text += f" {token.text}"
     else:
@@ -49,7 +55,6 @@ def handle_code(current_block: Block, token: Token, blocks: list[Block]) -> Bloc
         blocks.append(current_block)
 
     return Block(content=[token], block_type=BlockType.CODE)
-
 
 def parse_blocks(tokens: list[Token]) -> list[Block]:
 

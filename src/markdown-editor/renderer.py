@@ -20,6 +20,19 @@ def render_inline(text: str) -> str:
                 i = end + 1
                 continue
 
+        # Images
+        if text[i] == '!' and text[i+1] == '[':
+            # Find the closing ] and check for (url)
+            bracket_end = text.find(']', i + 2)
+            if bracket_end != -1 and bracket_end + 1 < len(text) and text[bracket_end + 1] == '(':
+                paren_end = text.find(')', bracket_end + 2)
+                if paren_end != -1:
+                    alt_text = text[i + 2:bracket_end]
+                    url = text[bracket_end + 2:paren_end]
+                    result.append(f'<img src="{url}" alt="{alt_text}" />')
+                    i = paren_end + 1
+                    continue
+
         # Links
         if text[i] == '[':
             # Find the closing ] and check for (url)
@@ -108,7 +121,9 @@ def render_heading(block: Block):
 
     sanitized_content = content.lstrip("#").strip()
 
-    return f"<h{level}>{render_inline(sanitized_content)}</h{level}>"
+    style = 'style="border-bottom-style: groove;"' if level in (1, 2) else ''
+
+    return f"<h{level} {style}>{render_inline(sanitized_content)}</h{level}>"
 
 def render_paragraph(block: Block):
     content = block.content
@@ -117,6 +132,10 @@ def render_paragraph(block: Block):
 
     for element in content:
         content_joined += element.text.lstrip() + " "
+
+        if element.text.rstrip().endswith("\\"):
+            content_joined = content_joined.rstrip().removesuffix("\\")
+            content_joined += "<br>"
 
     content_joined = content_joined.rstrip()
 
@@ -205,6 +224,9 @@ def render_code(block: Block) -> str:
     else:
         return f'<pre><code>{code}</code></pre>'
 
+def render_table(block: Block) -> str:
+    return ""
+
 RENDERERS = {
     BlockType.HEADING: render_heading,
     BlockType.PARAGRAPH: render_paragraph,
@@ -213,6 +235,7 @@ RENDERERS = {
     BlockType.UNORDERED_LIST: render_list,
     BlockType.ORDERED_LIST: render_list,
     BlockType.HORIZONTAL_RULE: render_horizontal_rule,
+    BlockType.TABLE: render_table
 }
 
 def render_html(blocks: list[Block]) -> str:

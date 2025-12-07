@@ -20,3 +20,4 @@ class BlockType(Enum):
     UNORDERED_LIST = "unordered_list"
     ORDERED_LIST = "ordered_list"
     HORIZONTAL_RULE = "horizontal_rule"
+    TABLE = "table"
