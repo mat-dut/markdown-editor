@@ -25,6 +25,8 @@ def tokenize(text: str) -> list[Token]:
             tokens.append(Token(text = line, token_type=TokenType.BLOCKQUOTE, indentation=indentation))
         elif line_stripped.startswith("```"):
             tokens.append(Token(text = line, token_type=TokenType.CODE, indentation=indentation))
+        elif re.match(r"^\[\^[0-9]+]:\s", line_stripped):
+            tokens.append(Token(text=line, token_type=TokenType.FOOTNOTE, indentation=indentation))
         elif line_stripped:
             tokens.append(Token(text = line, token_type=TokenType.TEXT, indentation=indentation))
         else:

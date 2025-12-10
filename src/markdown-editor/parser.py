@@ -16,6 +16,8 @@ def handle_text(current_block: Block, token: Token) -> Block:
 
     if current_block.block_type in [BlockType.ORDERED_LIST, BlockType.UNORDERED_LIST]:
         current_block.content[-1].text += f" {token.text}"
+    elif current_block.block_type == BlockType.FOOTNOTES:
+        current_block.content.append(token)
     else:
         current_block.content.append(token)
         current_block.block_type = BlockType.PARAGRAPH
@@ -55,6 +57,16 @@ def handle_code(current_block: Block, token: Token, blocks: list[Block]) -> Bloc
         blocks.append(current_block)
 
     return Block(content=[token], block_type=BlockType.CODE)
+
+def handle_footnote(current_block: Block, token: Token, blocks: list[Block]):
+    if current_block.block_type == BlockType.FOOTNOTES:
+        current_block.content.append(token)
+        return current_block
+
+    if current_block.content:
+        blocks.append(current_block)
+
+    return Block(content=[token], block_type=BlockType.FOOTNOTES)
 
 def parse_blocks(tokens: list[Token]) -> list[Block]:
 
@@ -99,6 +111,8 @@ def parse_blocks(tokens: list[Token]) -> list[Block]:
 
             blocks.append(Block(content=[token], block_type=BlockType.HORIZONTAL_RULE))
 
+        elif token.token_type == TokenType.FOOTNOTE:
+            current_block = handle_footnote(current_block, token, blocks)
         elif token.token_type == TokenType.EOF:
             if current_block.content:
                 blocks.append(current_block)

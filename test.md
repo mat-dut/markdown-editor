@@ -1,13 +1,13 @@
 ## Test *heading*
 
-This is a **simple** *paragraph.
+This is a **simple** *paragraph. [^1]
 This is a **text** in the* same paragraph.
 
 ~~This should be **striked** through~~
 
 This is a **[bold link](https://example.com)**.
 
-This is a belgian malinois image: ![belgian malinois image](https://dinoanimals.com/wp-content/uploads/2021/03/Malinois-22.jp)
+This is a belgian malinois image: ![belgian malinois image](https://dinoanimals.com/wp-content/uploads/2021/03/Malinois-22.jpg)
 
 This :duck: is on :fire: \
 :grinning_face:
@@ -35,3 +35,5 @@ This is some python code
 def main():
     print("Hello world!")
 ```
+
+[^1]: This is a footnote

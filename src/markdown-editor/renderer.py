@@ -293,6 +293,9 @@ def render_table(block: Block) -> str:
 
     return html
 
+def render_footnotes(block: Block) -> str:
+    return ""
+
 RENDERERS = {
     BlockType.HEADING: render_heading,
     BlockType.PARAGRAPH: render_paragraph,
@@ -301,7 +304,8 @@ RENDERERS = {
     BlockType.UNORDERED_LIST: render_list,
     BlockType.ORDERED_LIST: render_list,
     BlockType.HORIZONTAL_RULE: render_horizontal_rule,
-    BlockType.TABLE: render_table
+    BlockType.TABLE: render_table,
+    BlockType.FOOTNOTES: render_footnotes
 }
 
 def render_html(blocks: list[Block]) -> str:
