@@ -228,6 +228,21 @@ def parse_table_row(line: str) -> list[str]:
     line = line.strip()
     return [col.strip() for col in line.split('|') if col.strip()]
 
+def generate_alignment(alignment_row: list[str]) -> list[str]:
+    alignment_list = []
+
+    for column in alignment_row:
+        if ":" not in column:
+            alignment_list.append("left")
+        elif column.startswith(":") and column.endswith(":"):
+            alignment_list.append("center")
+        elif column.startswith(":"):
+            alignment_list.append("left")
+        else:
+            alignment_list.append("right")
+
+    return alignment_list
+
 def render_table(block: Block) -> str:
     if not block.content:
         return ""
@@ -240,11 +255,11 @@ def render_table(block: Block) -> str:
     if not all(set(cell) <= set(":-") for cell in rows[1]):
         return "<p>" + "<br>".join([token.text for token in block.content]) + "</p>"
 
-    header = rows[0]
+    headers = rows[0]
     alignment_row = rows[1]
     data_rows = rows[2:]
 
-    expected_cols = len(header)
+    expected_cols = len(headers)
 
     if len(alignment_row) != expected_cols:
         return "<p>" + "<br>".join([token.text for token in block.content]) + "</p>"
@@ -252,10 +267,31 @@ def render_table(block: Block) -> str:
     if not all(len(row) == expected_cols for row in data_rows):
         return "<p>" + "<br>".join([token.text for token in block.content]) + "</p>"
 
-    for row in rows:
-        print(row)
+    alignment_map = {
+        "left": "text-align: left",
+        "center": "text-align: center",
+        "right": "text-align: right",
+    }
 
-    return ""
+    alignment_list = generate_alignment(alignment_row)
+
+    html = "<table><thead><tr>"
+
+    for index, header in enumerate(headers):
+        html += f"<th style='{alignment_map[alignment_list[index]]}'>{header}</th>"
+
+    html += "</tr></thead><tbody>"
+
+    for data_row in data_rows:
+        html += "<tr>"
+        for index, cell in enumerate(data_row):
+            html += f"<td style='{alignment_map[alignment_list[index]]}'>{render_inline(cell)}</td>"
+        html += "</tr>"
+
+
+    html += "</tbody></table>"
+
+    return html
 
 RENDERERS = {
     BlockType.HEADING: render_heading,
