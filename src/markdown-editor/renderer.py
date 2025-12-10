@@ -224,7 +224,37 @@ def render_code(block: Block) -> str:
     else:
         return f'<pre><code>{code}</code></pre>'
 
+def parse_table_row(line: str) -> list[str]:
+    line = line.strip()
+    return [col.strip() for col in line.split('|') if col.strip()]
+
 def render_table(block: Block) -> str:
+    if not block.content:
+        return ""
+
+    rows = [parse_table_row(token.text) for token in block.content]
+
+    if len(rows) < 2:
+        return "<p>" + "<br>".join([token.text for token in block.content]) + "</p>"
+
+    if not all(set(cell) <= set(":-") for cell in rows[1]):
+        return "<p>" + "<br>".join([token.text for token in block.content]) + "</p>"
+
+    header = rows[0]
+    alignment_row = rows[1]
+    data_rows = rows[2:]
+
+    expected_cols = len(header)
+
+    if len(alignment_row) != expected_cols:
+        return "<p>" + "<br>".join([token.text for token in block.content]) + "</p>"
+
+    if not all(len(row) == expected_cols for row in data_rows):
+        return "<p>" + "<br>".join([token.text for token in block.content]) + "</p>"
+
+    for row in rows:
+        print(row)
+
     return ""
 
 RENDERERS = {
