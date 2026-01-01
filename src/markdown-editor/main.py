@@ -3,7 +3,7 @@ from parser import parse_blocks
 from renderer import render_html
 
 def main():
-    with open("test.md", "r") as file:
+    with open("examples/table.md", "r") as file:
         tokens = tokenize(file.read())
         blocks = parse_blocks(tokens)
         html = render_html(blocks)
