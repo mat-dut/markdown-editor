@@ -2,10 +2,12 @@ from models.types import TokenType, BlockType
 from models.models import Token, Block
 import re
 import emoji
+from utils import FootnoteTracker
 
-def render_inline(text: str) -> str:
+def render_inline(text: str, footnotes: dict[str, str] | None = None, footnote_tracker: FootnoteTracker | None = None) -> str:
     result = []
     i = 0
+    footnotes = footnotes or {}
 
     text = emoji.emojize(text)
 
@@ -33,6 +35,20 @@ def render_inline(text: str) -> str:
                     i = paren_end + 1
                     continue
 
+        # Footnotes
+        if text[i] == '[' and i + 1 < len(text) and text[i + 1] == '^':
+            bracket_end = text.find(']', i + 2)
+            if bracket_end != -1:
+                ref_text = text[i + 2:bracket_end]
+                if ref_text and (ref_text.isdigit() or ref_text.isalnum()):
+                    if footnote_tracker:
+                        footnote_num, occurrence_id = footnote_tracker.add_reference(ref_text)
+                        result.append(f'<sup><a href="#fn-{footnote_num}" id="ref-{occurrence_id}">[{footnote_num}]</a></sup>')
+                    else:
+                        result.append(f'<sup><a href="#fn-{ref_text}" id="ref-{ref_text}">[{ref_text}]</a></sup>')
+                    i = bracket_end + 1
+                    continue
+
         # Links
         if text[i] == '[':
             # Find the closing ] and check for (url)
@@ -43,7 +59,7 @@ def render_inline(text: str) -> str:
                     link_text = text[i+1:bracket_end]
                     url = text[bracket_end+2:paren_end]
                     result.append(f'<a href="{url}">')
-                    result.append(render_inline(link_text))
+                    result.append(render_inline(link_text, footnotes, footnote_tracker))
                     result.append('</a>')
                     i = paren_end + 1
                     continue
@@ -54,7 +70,7 @@ def render_inline(text: str) -> str:
             end = text.find(marker, i + 3)
             if end != -1:
                 result.append('<strong><em>')
-                result.append(render_inline(text[i+3:end]))
+                result.append(render_inline(text[i+3:end], footnotes, footnote_tracker))
                 result.append('</em></strong>')
                 i = end + 3
                 continue
@@ -65,7 +81,7 @@ def render_inline(text: str) -> str:
             end = text.find(marker, i + 2)
             if end != -1:
                 result.append('<strong>')
-                result.append(render_inline(text[i+2:end]))
+                result.append(render_inline(text[i+2:end], footnotes, footnote_tracker))
                 result.append('</strong>')
                 i = end + 2
                 continue
@@ -74,7 +90,7 @@ def render_inline(text: str) -> str:
             end = text.find('~~', i + 2)
             if end != -1:
                 result.append('<del>')
-                result.append(render_inline(text[i + 2:end]))
+                result.append(render_inline(text[i + 2:end], footnotes, footnote_tracker))
                 result.append('</del>')
                 i = end + 2
                 continue
@@ -98,7 +114,7 @@ def render_inline(text: str) -> str:
 
                     if not is_double_before and not is_double_after:
                         result.append('<em>')
-                        result.append(render_inline(text[i+1:j]))
+                        result.append(render_inline(text[i+1:j], footnotes, footnote_tracker))
                         result.append('</em>')
                         i = j + 1
                         break
@@ -114,7 +130,7 @@ def render_inline(text: str) -> str:
 
     return ''.join(result)
 
-def render_heading(block: Block):
+def render_heading(block: Block, footnotes: dict[str, str] | None = None, footnote_tracker: FootnoteTracker | None = None) -> str:
     content = block.content[0].text
 
     level = len(content.lstrip()) - len(content.lstrip().lstrip('#'))
@@ -123,9 +139,9 @@ def render_heading(block: Block):
 
     style = 'style="border-bottom-style: groove;"' if level in (1, 2) else ''
 
-    return f"<h{level} {style}>{render_inline(sanitized_content)}</h{level}>"
+    return f"<h{level} {style}>{render_inline(sanitized_content, footnotes, footnote_tracker)}</h{level}>"
 
-def render_paragraph(block: Block):
+def render_paragraph(block: Block, footnotes: dict[str, str] | None = None, footnote_tracker: FootnoteTracker | None = None) -> str:
     content = block.content
 
     content_joined = ""
@@ -139,10 +155,10 @@ def render_paragraph(block: Block):
 
     content_joined = content_joined.rstrip()
 
-    return "<p>" + render_inline(content_joined) + "</p>"
+    return "<p>" + render_inline(content_joined, footnotes, footnote_tracker) + "</p>"
 
 
-def render_list(block: Block) -> str:
+def render_list(block: Block, footnotes: dict[str, str] | None = None, footnote_tracker: FootnoteTracker | None = None) -> str:
     if not block.content:
         return ""
 
@@ -159,7 +175,7 @@ def render_list(block: Block) -> str:
 
     for token in block.content:
         text = re.sub(marker_pattern, '', token.text)
-        text = render_inline(text)
+        text = render_inline(text, footnotes, footnote_tracker)
 
         current_indent = token.indentation
 
@@ -243,7 +259,7 @@ def generate_alignment(alignment_row: list[str]) -> list[str]:
 
     return alignment_list
 
-def render_table(block: Block) -> str:
+def render_table(block: Block, footnotes: dict[str, str] | None = None, footnote_tracker: FootnoteTracker | None = None) -> str:
     if not block.content:
         return ""
 
@@ -285,7 +301,7 @@ def render_table(block: Block) -> str:
     for data_row in data_rows:
         html += "<tr>"
         for index, cell in enumerate(data_row):
-            html += f"<td style='{alignment_map[alignment_list[index]]}'>{render_inline(cell)}</td>"
+            html += f"<td style='{alignment_map[alignment_list[index]]}'>{render_inline(cell, footnotes, footnote_tracker)}</td>"
         html += "</tr>"
 
 
@@ -293,8 +309,42 @@ def render_table(block: Block) -> str:
 
     return html
 
-def render_footnotes(block: Block) -> str:
-    return ""
+def parse_footnotes_block(block: Block) -> dict:
+    footnotes_data = {}
+
+    for token in block.content:
+        match = re.match(r'^\[(\^[0-9a-zA-Z]+)\]:\s*(.*)$', token.text.lstrip())
+        if match:
+            ref_name = match.group(1)[1:]
+            content = match.group(2)
+            footnotes_data[ref_name] = content
+        elif token.token_type == TokenType.TEXT and footnotes_data:
+            last_key = list(footnotes_data.keys())[-1]
+            footnotes_data[last_key] += ' ' + token.text.lstrip()
+
+    return footnotes_data
+
+def render_footnotes_section(footnotes: dict[str, str], tracker: FootnoteTracker) -> str:
+    if not footnotes or not tracker.order:
+        return ''
+
+    html = ['<div class="footnotes"><hr><ol>']
+
+    for i, ref_name in enumerate(tracker.order, 1):
+        if ref_name not in footnotes:
+            continue
+
+        content = render_inline(footnotes[ref_name], footnotes, tracker)
+
+        backlinks = [
+            f'<a href="#ref-{occ_id}">↩{j if j > 1 else ""}</a>'
+            for j, occ_id in enumerate(tracker.occurrences[ref_name], 1)
+        ]
+
+        html.append(f'<li id="fn-{i}">{content} {" ".join(backlinks)}</li>')
+
+    html.append('</ol></div>')
+    return ''.join(html)
 
 RENDERERS = {
     BlockType.HEADING: render_heading,
@@ -304,16 +354,35 @@ RENDERERS = {
     BlockType.UNORDERED_LIST: render_list,
     BlockType.ORDERED_LIST: render_list,
     BlockType.HORIZONTAL_RULE: render_horizontal_rule,
-    BlockType.TABLE: render_table,
-    BlockType.FOOTNOTES: render_footnotes
+    BlockType.TABLE: render_table
 }
 
 def render_html(blocks: list[Block]) -> str:
     html = []
+    footnotes: dict[str, str] = {}
+    tracker = FootnoteTracker()
 
     for block in blocks:
-        if block and block.content:
-            block_html = RENDERERS[block.block_type](block)
-            html.append(block_html)
+        if block and block.content and block.block_type == BlockType.FOOTNOTES:
+            footnotes.update(parse_footnotes_block(block))
+
+    for block in blocks:
+        if not block or not block.content or block.block_type == BlockType.FOOTNOTES:
+            continue
+
+        if block.block_type is None or block.block_type not in RENDERERS:
+            continue
+
+        if block.block_type in [BlockType.HEADING, BlockType.PARAGRAPH, BlockType.UNORDERED_LIST,
+                                BlockType.ORDERED_LIST, BlockType.TABLE]:
+            renderer = RENDERERS[block.block_type]
+            block_html = renderer(block, footnotes, tracker)
+        else:
+            renderer = RENDERERS[block.block_type]
+            block_html = renderer(block)
+
+        html.append(block_html)
+
+    html.append(render_footnotes_section(footnotes, tracker))
 
     return ''.join(html)
