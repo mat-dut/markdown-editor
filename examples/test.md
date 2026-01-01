@@ -38,5 +38,5 @@ def main():
 
 This is some code loaded from the filesystem:
 
-```(/home/mdut/WAT/pjf/markdown-editor/.gitignore)python
+```(/path/to/file)python
 ```

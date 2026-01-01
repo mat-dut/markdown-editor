@@ -225,13 +225,28 @@ def render_code(block: Block) -> str:
         return ""
 
     first_line = block.content[0].text.strip()
-    language = first_line[3:].strip() if len(first_line) > 3 else ""
 
-    code_lines = []
-    for token in block.content[1:-1]:
-        code_lines.append(token.text)
+    file_include_match = re.match(r'^```\((.+?)\)(.*)$', first_line)
 
-    code = '\n'.join(code_lines)
+    if file_include_match:
+        file_path = file_include_match.group(1)
+        language = file_include_match.group(2).strip()
+
+        try:
+            with open(file_path, 'r') as f:
+                code = f.read()
+        except FileNotFoundError:
+            code = f"Error: File not found: {file_path}"
+        except Exception as e:
+            code = f"Error reading file: {str(e)}"
+    else:
+        language = first_line[3:].strip() if len(first_line) > 3 else ""
+
+        code_lines = []
+        for token in block.content[1:-1]:
+            code_lines.append(token.text)
+
+        code = '\n'.join(code_lines)
 
     code = code.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
