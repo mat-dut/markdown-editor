@@ -12,6 +12,14 @@ def render_inline(text: str, footnotes: dict[str, str] | None = None, footnote_t
     text = emoji.emojize(text)
 
     while i < len(text):
+        # Escaping
+        if text[i] == '\\' and i + 1 < len(text):
+            next_char = text[i + 1]
+            if next_char in r'*_[]()!`~\#+-{}<>|.':
+                result.append(next_char)
+                i += 2
+                continue
+
         # Code blocks
         if text[i] == '`':
             end = text.find('`', i + 1)
@@ -175,6 +183,20 @@ def render_list(block: Block, footnotes: dict[str, str] | None = None, footnote_
 
     for token in block.content:
         text = re.sub(marker_pattern, '', token.text)
+
+        # Checkboxes
+        checkbox_html = ""
+        li_style = ""
+        checkbox_match = re.match(r'^\s*\[([ xX])\]\s+', text)
+        if checkbox_match and block.block_type == BlockType.UNORDERED_LIST:
+            checkbox_state = checkbox_match.group(1)
+            if checkbox_state == ' ':
+                checkbox_html = '<input type="checkbox"> '
+            else:
+                checkbox_html = '<input type="checkbox" checked> '
+            text = text[checkbox_match.end():]
+            li_style = ' style="list-style: none;"'
+
         text = render_inline(text, footnotes, footnote_tracker)
 
         current_indent = token.indentation
@@ -189,7 +211,7 @@ def render_list(block: Block, footnotes: dict[str, str] | None = None, footnote_
             html_parts.append(f"</{list_tag}>")
             indent_stack.pop()
 
-        html_parts.append(f"<li>{text}</li>")
+        html_parts.append(f"<li{li_style}>{checkbox_html}{text}</li>")
 
     # Close all remaining nested lists
     while len(indent_stack) > 1:
