@@ -7,7 +7,7 @@ This is a **text** in the* same paragraph.
 
 This is a **[bold link](https://example.com)**.
 
-This is a belgian malinois image: ![belgian malinois image](https://dinoanimals.com/wp-content/uploads/2021/03/Malinois-22.jp)
+This is a belgian malinois image: ![belgian malinois image](https://dinoanimals.com/wp-content/uploads/2021/03/Malinois-22.jpg)
 
 This :duck: is on :fire: \
 :grinning_face:
@@ -38,5 +38,5 @@ def main():
 
 This is some code loaded from the filesystem:
 
-```(/path/to/file)python
+```(/home/mdut/projects/markdown-editor/src/markdown-editor/gui.py)python
 ```

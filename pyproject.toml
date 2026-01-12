@@ -7,4 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
     "emoji>=2.15.0",
     "mypy>=1.19.1",
+    "pyqt6-webengine>=6.10.0",
+    "pyside6>=6.10.1",
 ]
