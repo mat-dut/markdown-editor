@@ -149,7 +149,7 @@ class MarkdownEditor(QMainWindow):
         </script>
         <style>
             body {{
-                font-family: 'JetBrains Mono', monospace;
+                font-family: 'JetBrains Mono', 'Apple Color Emoji', 'Noto Color Emoji', monospace;
                 line-height: 1.6;
                 padding: 20px;
                 max-width: 900px;
@@ -168,7 +168,8 @@ class MarkdownEditor(QMainWindow):
                 background-color: #f6f8fa;
                 padding: 2px 6px;
                 border-radius: 3px;
-                font-family: 'JetBrains Mono', monospace;
+                font-family: 'JetBrains Mono', 'Apple Color Emoji', 'Noto Color Emoji', monospace;
+
             }}
             pre {{
                 background-color: #f6f8fa;
@@ -373,6 +374,10 @@ class MarkdownEditor(QMainWindow):
 
 
 def main():
+    import os
+
+    os.environ['QTWEBENGINE_CHROMIUM_FLAGS'] = '--disable-gpu --disable-software-rasterizer --in-process-gpu'
+
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     window = MarkdownEditor()
